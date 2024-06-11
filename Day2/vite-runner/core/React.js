@@ -1,23 +1,24 @@
 function createElement(type, props, ...children) {
-    console.log('!!!')
     return {
         type,
         props: {
             ...props,
-            children: children.map(child => {
-                return typeof child === 'string' ? createTextNode(child) : child
-            })
-        }
+            children: children.map((child) => {
+                return typeof child === "string"
+                    ? createTextNode(child)
+                    : child;
+            }),
+        },
     };
 }
 
 function createTextNode(text) {
     return {
-        type: 'TEXT_ELEMENT',
+        type: "TEXT_ELEMENT",
         props: {
             nodeValue: text,
-            children: []
-        }
+            children: [],
+        },
     };
 }
 
@@ -25,62 +26,99 @@ function render(el, container) {
     nextWorkOfUnit = {
         dom: container,
         props: {
-            children: [el]
-        }
-    }
+            children: [el],
+        },
+    };
+    root = nextWorkOfUnit;
 }
 
+let root = null;
 let nextWorkOfUnit = null;
 function workLoop(deadline) {
     let shouldYield = false;
-    while(!shouldYield && nextWorkOfUnit) {
-        nextWorkOfUnit = performWorkUnitOfWork(nextWorkOfUnit);
+    while (!shouldYield && nextWorkOfUnit) {
+        nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit);
         shouldYield = deadline.timeRemaining < 1;
+    }
+    if (!nextWorkOfUnit && root) {
+        commitRoot();
     }
     requestIdleCallback(workLoop);
 }
 
-function performWorkUnitOfWork(work) {
-    if (!work.dom) {
-        // 1、创建dom
-        const dom = work.type === 'TEXT_ELEMENT' ? document.createTextNode('') : document.createElement(work.type);
-        work.dom = dom;
-        work.parent.dom.append(dom);
-        // 2、处理props
-        Object.keys(work.props).forEach(key => {
-            if (key !== 'children') {
-                dom[key] = work.props[key];
-            }
-        });
+function commitRoot() {
+    commitWork(root.child);
+    root = null;
+}
+
+function commitWork(fiber) {
+    if (!fiber) return;
+    let fiberParent = fiber.parent;
+    while (!fiberParent.dom) {
+        fiberParent = fiberParent.parent;
     }
+    if (fiber.dom) {
+        fiberParent.dom.append(fiber.dom);
+    }
+    commitWork(fiber.child);
+    commitWork(fiber.sibling);
+}
+
+function updateProps(dom, props) {
+    Object.keys(props).forEach((key) => {
+        if (key !== "children") {
+            dom[key] = props[key];
+        }
+    });
+}
+
+function initChildren(fiber, children) {
     // 3、转换链表 设置指针
-    const { children } = work.props;
     let preChild = null;
     children.forEach((child, index) => {
-        const newWork = {
+        const newFiber = {
             type: child.type,
             props: child.props,
-            child: null, 
-            parent: work,
+            child: null,
+            parent: fiber,
             sibling: null,
-            dom: null
+            dom: null,
         };
         if (index === 0) {
-            work.child = newWork;
+            fiber.child = newFiber;
         } else {
-            preChild.sibling = newWork;   
+            preChild.sibling = newFiber;
         }
-        preChild = newWork;
-    })
+        preChild = newFiber;
+    });
+}
+
+function performWorkOfUnit(fiber) { 
+    const isFunctionComponent = typeof fiber.type === "function";
+    if (!isFunctionComponent) {
+        if (!fiber.dom) {
+            // 1、创建dom
+            const dom =
+                fiber.type === "TEXT_ELEMENT"
+                    ? document.createTextNode("")
+                    : document.createElement(fiber.type);
+            fiber.dom = dom;
+            // 2、处理props
+            updateProps(dom, fiber.props);
+        }
+    }
+   
+    const children = isFunctionComponent ? [fiber.type()] : fiber.props.children;
+    initChildren(fiber, children);
     // 4、返回下一个要执行的任务
-    if (work.child) {
-        return work.child;
+    if (fiber.child) {
+        return fiber.child;
     }
-    if (work.sibling) {
-        return work.sibling;
+    if (fiber.sibling) {
+        return fiber.sibling;
     }
-    return work.parent?.sibling;
+    return fiber.parent?.sibling;
 }
 requestIdleCallback(workLoop);
 
-export default { render, createElement }
+export default { render, createElement };
