@@ -4,10 +4,9 @@ function createElement(type, props, ...children) {
         props: {
             ...props,
             children: children.map((child) => {
-                const isTextNode = typeof child === "string" || typeof child === "number"
-                return isTextNode
-                    ? createTextNode(child)
-                    : child;
+                const isTextNode =
+                    typeof child === "string" || typeof child === "number";
+                return isTextNode ? createTextNode(child) : child;
             }),
         },
     };
@@ -93,24 +92,43 @@ function initChildren(fiber, children) {
         preChild = newFiber;
     });
 }
+/**
+ * @description 处理函数组件
+ * @param {*} fiber
+ */
+function updateFunctionComponent(fiber) {
+    const children = [fiber.type(fiber.props)];
+    initChildren(fiber, children);
+}
 
-function performWorkOfUnit(fiber) { 
+/**
+ * @description 处理普通组件
+ * @param {*} fiber
+ */
+function updateHostComponent(fiber) {
+    if (!fiber.dom) {
+        // 1、创建dom
+        const dom =
+            fiber.type === "TEXT_ELEMENT"
+                ? document.createTextNode("")
+                : document.createElement(fiber.type);
+        fiber.dom = dom;
+        // 2、处理props
+        updateProps(dom, fiber.props);
+    }
+    const children = fiber.props.children;
+    initChildren(fiber, children);
+}
+
+function performWorkOfUnit(fiber) {
     const isFunctionComponent = typeof fiber.type === "function";
-    if (!isFunctionComponent) {
-        if (!fiber.dom) {
-            // 1、创建dom
-            const dom =
-                fiber.type === "TEXT_ELEMENT"
-                    ? document.createTextNode("")
-                    : document.createElement(fiber.type);
-            fiber.dom = dom;
-            // 2、处理props
-            updateProps(dom, fiber.props);
-        }
+
+    if (isFunctionComponent) {
+        updateFunctionComponent(fiber);
+    } else {
+        updateHostComponent(fiber);
     }
 
-    const children = isFunctionComponent ? [fiber.type(fiber.props)] : fiber.props.children;
-    initChildren(fiber, children);
     // 4、返回下一个要执行的任务
     if (fiber.child) {
         return fiber.child;
