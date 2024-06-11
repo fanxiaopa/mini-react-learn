@@ -1,18 +1,17 @@
 import React from "./core/React.js";
 // 这里vite会把jsx默认转化成 React.createElement方法调用
 
-function S() {
-    return <h3>sun</h3>
-}
-function T() {
-    return <h2>T<S></S></h2>;
+function Count({ num }) {
+    return <div>Count: {num}</div>;
 }
 function App() {
     return (
         <div>
             app
             {/* <h2>T</h2> */}
-            <T />
+            <Count num={10} />
+            <Count num={20} />
+
         </div>
     );
 }
