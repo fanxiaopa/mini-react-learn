@@ -66,7 +66,10 @@ function commitWork(fiber) {
 
 function updateProps(dom, props) {
     Object.keys(props).forEach((key) => {
-        if (key !== "children") {
+        if (key.startsWith('on')) {
+            const eventType = key.slice(2).toLocaleLowerCase();
+            dom.addEventListener(eventType, props[key]);
+        } else if (key !== "children") {
             dom[key] = props[key];
         }
     });
@@ -122,7 +125,8 @@ function updateHostComponent(fiber) {
 
 function performWorkOfUnit(fiber) {
     const isFunctionComponent = typeof fiber.type === "function";
-
+    console.log('fiber', fiber);
+    
     if (isFunctionComponent) {
         updateFunctionComponent(fiber);
     } else {
