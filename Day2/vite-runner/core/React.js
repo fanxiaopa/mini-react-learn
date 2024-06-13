@@ -34,13 +34,14 @@ function render(el, container) {
 
 let root = null;
 let nextWorkOfUnit = null;
+let currentRoot = null;
 function workLoop(deadline) {
     let shouldYield = false;
     while (!shouldYield && nextWorkOfUnit) {
         nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit);
         shouldYield = deadline.timeRemaining < 1;
     }
-    if (!nextWorkOfUnit && root) {
+    if (!nextWorkOfUnit && root) {        
         commitRoot();
     }
     requestIdleCallback(workLoop);
@@ -48,6 +49,7 @@ function workLoop(deadline) {
 
 function commitRoot() {
     commitWork(root.child);
+    currentRoot = root;
     root = null;
 }
 
@@ -57,36 +59,79 @@ function commitWork(fiber) {
     while (!fiberParent.dom) {
         fiberParent = fiberParent.parent;
     }
-    if (fiber.dom) {
-        fiberParent.dom.append(fiber.dom);
+    if (fiber.effectTag === 'update') {
+        updateProps(fiber.dom, fiber.props, fiber.alternate?.props);
+    } else if (fiber.effectTag === 'placement') {
+        if (fiber.dom) {
+            fiberParent.dom.append(fiber.dom);
+        }
     }
+    
     commitWork(fiber.child);
     commitWork(fiber.sibling);
 }
 
-function updateProps(dom, props) {
-    Object.keys(props).forEach((key) => {
-        if (key.startsWith('on')) {
-            const eventType = key.slice(2).toLocaleLowerCase();
-            dom.addEventListener(eventType, props[key]);
-        } else if (key !== "children") {
-            dom[key] = props[key];
+function updateProps(dom, nextProps, preProps = {}) {
+    // 1、old 有 new 没有 - 删除
+    Object.keys(preProps).forEach((key) => {
+        if (key != 'children') {
+            if (!(key in nextProps)) {
+                dom.removeAttribute(key);
+            }
         }
-    });
+    })
+    // 2、old 没有 new 有 - 添加
+    // 3、old 有 new 有 - 更新
+    Object.keys(nextProps).forEach((key) => {
+        if (key != 'children') {
+            if (preProps[key] != nextProps[key]) {
+                if (key.startsWith('on')) {
+                    const eventType = key.slice(2).toLocaleLowerCase();
+                    dom.removeEventListener(eventType, preProps[key]);
+                    dom.addEventListener(eventType, nextProps[key]);
+                } else {
+                    dom[key] = nextProps[key];
+                }
+            }
+        }
+    })
 }
 
 function initChildren(fiber, children) {
+    let oldFiber = fiber.alternate?.child;
     // 3、转换链表 设置指针
     let preChild = null;
     children.forEach((child, index) => {
-        const newFiber = {
-            type: child.type,
-            props: child.props,
-            child: null,
-            parent: fiber,
-            sibling: null,
-            dom: null,
-        };
+        // 判断是否是相同节点
+        const isSameType = oldFiber && oldFiber.type === child.type;
+        let newFiber;
+        if (isSameType) {
+            newFiber = {
+                type: child.type,
+                props: child.props,
+                child: null,
+                parent: fiber,
+                sibling: null,
+                dom: oldFiber.dom,
+                effectTag: 'update',
+                alternate: oldFiber
+            }
+        } else {
+            newFiber = {
+                type: child.type,
+                props: child.props,
+                child: null,
+                parent: fiber,
+                sibling: null,
+                dom: null,
+                effectTag: 'placement',
+            };
+        }
+        
+        if (oldFiber) {
+            oldFiber = oldFiber.sibling;
+        }
+
         if (index === 0) {
             fiber.child = newFiber;
         } else {
@@ -125,8 +170,7 @@ function updateHostComponent(fiber) {
 
 function performWorkOfUnit(fiber) {
     const isFunctionComponent = typeof fiber.type === "function";
-    console.log('fiber', fiber);
-    
+ 
     if (isFunctionComponent) {
         updateFunctionComponent(fiber);
     } else {
@@ -149,4 +193,13 @@ function performWorkOfUnit(fiber) {
 }
 requestIdleCallback(workLoop);
 
-export default { render, createElement };
+function update() {
+    nextWorkOfUnit = {
+        dom: currentRoot.dom,
+        props: currentRoot.props,
+        alternate: currentRoot
+    };
+    root = nextWorkOfUnit;
+}
+
+export default { render, createElement, update };
