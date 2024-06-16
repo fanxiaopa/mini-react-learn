@@ -23,16 +23,16 @@ function createTextNode(text) {
 }
 
 function render(el, container) {
-    nextWorkOfUnit = {
+    wipRoot = {
         dom: container,
         props: {
             children: [el],
         },
     };
-    root = nextWorkOfUnit;
+    nextWorkOfUnit = wipRoot;
 }
 
-let root = null;
+let wipRoot = null;
 let nextWorkOfUnit = null;
 let currentRoot = null;
 function workLoop(deadline) {
@@ -41,16 +41,16 @@ function workLoop(deadline) {
         nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit);
         shouldYield = deadline.timeRemaining < 1;
     }
-    if (!nextWorkOfUnit && root) {        
+    if (!nextWorkOfUnit && wipRoot) {        
         commitRoot();
     }
     requestIdleCallback(workLoop);
 }
 
 function commitRoot() {
-    commitWork(root.child);
-    currentRoot = root;
-    root = null;
+    commitWork(wipRoot.child);
+    currentRoot = wipRoot;
+    wipRoot = null;
 }
 
 function commitWork(fiber) {
@@ -97,7 +97,7 @@ function updateProps(dom, nextProps, preProps = {}) {
     })
 }
 
-function initChildren(fiber, children) {
+function reconcileChildren(fiber, children) {
     let oldFiber = fiber.alternate?.child;
     // 3、转换链表 设置指针
     let preChild = null;
@@ -146,7 +146,7 @@ function initChildren(fiber, children) {
  */
 function updateFunctionComponent(fiber) {
     const children = [fiber.type(fiber.props)];
-    initChildren(fiber, children);
+    reconcileChildren(fiber, children);
 }
 
 /**
@@ -165,7 +165,7 @@ function updateHostComponent(fiber) {
         updateProps(dom, fiber.props);
     }
     const children = fiber.props.children;
-    initChildren(fiber, children);
+    reconcileChildren(fiber, children);
 }
 
 function performWorkOfUnit(fiber) {
@@ -194,12 +194,12 @@ function performWorkOfUnit(fiber) {
 requestIdleCallback(workLoop);
 
 function update() {
-    nextWorkOfUnit = {
+    wipRoot = {
         dom: currentRoot.dom,
         props: currentRoot.props,
         alternate: currentRoot
     };
-    root = nextWorkOfUnit;
+    nextWorkOfUnit = wipRoot;
 }
 
 export default { render, createElement, update };
