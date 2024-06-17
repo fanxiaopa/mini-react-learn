@@ -1,3 +1,5 @@
+import { getFiberParent } from './utils';
+
 function createElement(type, props, ...children) {
     return {
         type,
@@ -35,6 +37,7 @@ function render(el, container) {
 let wipRoot = null;
 let nextWorkOfUnit = null;
 let currentRoot = null;
+let deletions = [];
 function workLoop(deadline) {
     let shouldYield = false;
     while (!shouldYield && nextWorkOfUnit) {
@@ -48,17 +51,27 @@ function workLoop(deadline) {
 }
 
 function commitRoot() {
+    deletions.forEach(commitDeletions);
+    deletions = [];
     commitWork(wipRoot.child);
     currentRoot = wipRoot;
     wipRoot = null;
 }
 
+function commitDeletions(fiber) {
+    // 删除dom元素
+    if (fiber.dom) {
+        const fiberParent = getFiberParent(fiber);
+        fiberParent.dom.removeChild(fiber.dom);
+    } else {
+        commitDeletions(fiber.child);
+    }    
+}
+
+
 function commitWork(fiber) {
     if (!fiber) return;
-    let fiberParent = fiber.parent;
-    while (!fiberParent.dom) {
-        fiberParent = fiberParent.parent;
-    }
+    const fiberParent = getFiberParent(fiber);
     if (fiber.effectTag === 'update') {
         updateProps(fiber.dom, fiber.props, fiber.alternate?.props);
     } else if (fiber.effectTag === 'placement') {
@@ -126,6 +139,9 @@ function reconcileChildren(fiber, children) {
                 dom: null,
                 effectTag: 'placement',
             };
+            
+            // 收集老节点，后面统一删除
+            oldFiber && deletions.push(oldFiber);
         }
         
         if (oldFiber) {
