@@ -1,15 +1,15 @@
 /*
  * @Author: yxfan
  * @Date: 2024-06-01 15:17:35
- * @LastEditTime: 2024-06-17 20:47:29
- * @FilePath: /mini-react-learn/Day2/vite-runner/App.jsx
+ * @LastEditTime: 2024-06-26 17:30:38
+ * @FilePath: /Day2/vite-runner/App.jsx
  * @Description: 
  */
 import React from "./core/React.js";
 // 这里vite会把jsx默认转化成 React.createElement方法调用
 
 let count = 0;
-let showBar = false;
+let showBar = true;
 function Count({ num }) {
     function hnadleClick() {
         count++;
@@ -27,12 +27,18 @@ function ShowBar() {
         showBar = !showBar;
         React.update();
     }
-    function Foo() {
-        return <div>foo</div>
-    }
+
+    const foo = (
+        <div>
+            foo
+            <div>children1</div>
+            <div>children2</div>
+        </div>
+    )
     return (
         <div id="yxfan">
-            <div>{showBar ? <Foo/> : <p>bar</p>}</div>
+        
+            <div>{showBar ? foo : <div>bar</div>}</div>
             <button onClick={handleShow}>切换</button>
         </div>
     )

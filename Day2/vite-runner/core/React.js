@@ -1,4 +1,4 @@
-import { getFiberParent } from './utils';
+import { getFiberParent, deleteOldFiber } from './utils';
 
 function createElement(type, props, ...children) {
     return {
@@ -155,7 +155,12 @@ function reconcileChildren(fiber, children) {
         }
         preChild = newFiber;
     });
+
+    if (oldFiber) {
+        deleteOldFiber(oldFiber);
+    }
 }
+
 /**
  * @description 处理函数组件
  * @param {*} fiber
@@ -186,7 +191,6 @@ function updateHostComponent(fiber) {
 
 function performWorkOfUnit(fiber) {
     const isFunctionComponent = typeof fiber.type === "function";
- 
     if (isFunctionComponent) {
         updateFunctionComponent(fiber);
     } else {
