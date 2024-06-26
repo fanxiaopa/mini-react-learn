@@ -130,16 +130,18 @@ function reconcileChildren(fiber, children) {
                 alternate: oldFiber
             }
         } else {
-            newFiber = {
-                type: child.type,
-                props: child.props,
-                child: null,
-                parent: fiber,
-                sibling: null,
-                dom: null,
-                effectTag: 'placement',
-            };
-            
+            // child可能为false，(在用变量控制元素的隐藏时, 可能为false)
+            if (child) {
+                newFiber = {
+                    type: child.type,
+                    props: child.props,
+                    child: null,
+                    parent: fiber,
+                    sibling: null,
+                    dom: null,
+                    effectTag: 'placement',
+                };
+            }
             // 收集老节点，后面统一删除
             oldFiber && deletions.push(oldFiber);
         }
@@ -147,13 +149,22 @@ function reconcileChildren(fiber, children) {
         if (oldFiber) {
             oldFiber = oldFiber.sibling;
         }
-
+      
         if (index === 0) {
             fiber.child = newFiber;
         } else {
-            preChild.sibling = newFiber;
+            // 如果第一个字节点是undefined，那么要用第二个子节点
+            if (!fiber.child) {
+                fiber.child = newFiber;
+            }
+            if (preChild) {
+                preChild.sibling = newFiber;
+            }
         }
-        preChild = newFiber;
+        if (newFiber) {
+            preChild = newFiber;
+
+        }
     });
 
     if (oldFiber) {
