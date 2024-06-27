@@ -35,13 +35,18 @@ function render(el, container) {
 }
 
 let wipRoot = null;
+let wipFiber = null;
 let nextWorkOfUnit = null;
-let currentRoot = null;
+
 let deletions = [];
 function workLoop(deadline) {
     let shouldYield = false;
     while (!shouldYield && nextWorkOfUnit) {
         nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit);
+        // 更新时，当要更新的组件处理完后，退出循环（开始点：wipRoot，结束点：wipRoot?.sibling）
+        if (wipRoot?.sibling?.type === nextWorkOfUnit?.type) {
+            nextWorkOfUnit = undefined;
+        }
         shouldYield = deadline.timeRemaining < 1;
     }
     if (!nextWorkOfUnit && wipRoot) {        
@@ -54,7 +59,6 @@ function commitRoot() {
     deletions.forEach(commitDeletions);
     deletions = [];
     commitWork(wipRoot.child);
-    currentRoot = wipRoot;
     wipRoot = null;
 }
 
@@ -177,6 +181,7 @@ function reconcileChildren(fiber, children) {
  * @param {*} fiber
  */
 function updateFunctionComponent(fiber) {
+    wipFiber = fiber;
     const children = [fiber.type(fiber.props)];
     reconcileChildren(fiber, children);
 }
@@ -225,12 +230,15 @@ function performWorkOfUnit(fiber) {
 requestIdleCallback(workLoop);
 
 function update() {
-    wipRoot = {
-        dom: currentRoot.dom,
-        props: currentRoot.props,
-        alternate: currentRoot
-    };
-    nextWorkOfUnit = wipRoot;
+    // 必包，用于保存wipFiber；
+    let currentFiber = wipFiber;
+    return () => {
+        wipRoot = {
+            ...currentFiber,
+            alternate: currentFiber
+        }
+        nextWorkOfUnit = wipRoot;
+    }
 }
 
 export default { render, createElement, update };

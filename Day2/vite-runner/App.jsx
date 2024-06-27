@@ -1,14 +1,17 @@
 /*
  * @Author: yxfan
  * @Date: 2024-06-01 15:17:35
- * @LastEditTime: 2024-06-26 18:14:23
- * @FilePath: /Day2/vite-runner/App.jsx
+ * @LastEditTime: 2024-06-27 16:23:45
+ * @FilePath: /mini-react-learn/Day2/vite-runner/App.jsx
  * @Description: 
  */
 import React from "./core/React.js";
 // 这里vite会把jsx默认转化成 React.createElement方法调用
 
 let count = 0;
+let countApp = 0;
+let countBar = 0;
+let countFoo = 0;
 let showBar = false;
 function Count({ num }) {
     function hnadleClick() {
@@ -22,36 +25,57 @@ function Count({ num }) {
         </div>
     );
 }
-function ShowBar() {
-    function handleShow() {
-        showBar = !showBar;
-        React.update();
+function Foo() {
+    const update = React.update();
+    function handleClick() {
+        countFoo++;
+        update();
     }
-
-    const foo = (
-        <div>
-            foo
-            <div>children1</div>
-            <div>children2</div>
+    console.log('Foo render');
+    return (
+        <div id="foo">
+            {countFoo}
+            <button onClick={handleClick}>切换</button>
         </div>
     )
+}
+function Bar() {
+    const update = React.update();
+    function handleClick() {
+        countBar++;
+        update();
+    }
+    console.log('Bar render');
+
+    function Bar2() {
+        return (
+            <div>bar2</div>
+        )
+    }
     return (
-        <div id="yxfan2">
-            {/* <div>{showBar ? foo : <div>bar</div>}</div> */}
-            {showBar && foo}
-            <button onClick={handleShow}>切换</button>
+        <div id="bar">
+            {countBar}
+            <button onClick={handleClick}>切换</button>
+            {/* <Bar2 /> */}
         </div>
     )
 }
 function App() {
+    const update = React.update();
+    function handleClick() {
+        countApp++;
+        update();
+    }
+
+    console.log('App render');
     return (
         <div id="yxfan1"> 
-            {/* 10 */}
-            {/* app */}
-            {/* <h2>T</h2> */}
-            {/* <Count num={10} /> */}
-            <ShowBar />
-            {/* <Count num={20} /> */}
+            {countApp}
+            <button onClick={handleClick}>点击</button>
+            <h2>子组件bar</h2>
+            <Bar />
+            <h2>子组件foo</h2>
+            <Foo />
 
         </div>
     );
