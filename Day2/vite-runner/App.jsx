@@ -1,11 +1,12 @@
 /*
  * @Author: yxfan
  * @Date: 2024-06-01 15:17:35
- * @LastEditTime: 2024-06-27 16:23:45
+ * @LastEditTime: 2024-06-27 17:37:25
  * @FilePath: /mini-react-learn/Day2/vite-runner/App.jsx
  * @Description: 
  */
 import React from "./core/React.js";
+const { useState } = React;
 // 这里vite会把jsx默认转化成 React.createElement方法调用
 
 let count = 0;
@@ -61,21 +62,25 @@ function Bar() {
     )
 }
 function App() {
-    const update = React.update();
+  
+    const [count, setCount] = useState(0);
+    const [str, setStr] = useState('');
     function handleClick() {
-        countApp++;
-        update();
+        setCount(pre => pre + 1);
+        setStr(p => p + 'x');
     }
 
-    console.log('App render');
+    console.log('App render', count);
+    
     return (
         <div id="yxfan1"> 
-            {countApp}
+            {count}
+            {str}
             <button onClick={handleClick}>点击</button>
-            <h2>子组件bar</h2>
+            {/* <h2>子组件bar</h2>
             <Bar />
             <h2>子组件foo</h2>
-            <Foo />
+            <Foo /> */}
 
         </div>
     );
