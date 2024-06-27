@@ -251,22 +251,26 @@ function useState(intial) {
     // 必包，用于保存wipFiber；
     let currentFiber = wipFiber;
     const oldHook = currentFiber?.alternate?.stateHooks[stateHookIndex];
-   
-
+    
     const stateHook = {
         state: oldHook ? oldHook.state : intial,
     }
     stateHooks.push(stateHook);
     stateHookIndex++;
     currentFiber.stateHooks = stateHooks;
-   
-    const setState = (action) => {
-        stateHook.state = action(stateHook.state);
-        wipRoot = {
-            ...currentFiber,
-            alternate: currentFiber
+  
+    const setState = (_action) => {
+        const action =  typeof _action === 'function' ? _action : () => _action;
+        const state = action(stateHook.state);
+        // 只有state变化时，才更新
+        if (state !== stateHook.state) {
+            stateHook.state = state;
+            wipRoot = {
+                ...currentFiber,
+                alternate: currentFiber
+            }
+            nextWorkOfUnit = wipRoot;
         }
-        nextWorkOfUnit = wipRoot;
     }
 
     return [stateHook.state, setState]

@@ -1,7 +1,7 @@
 /*
  * @Author: yxfan
  * @Date: 2024-06-01 15:17:35
- * @LastEditTime: 2024-06-27 17:37:25
+ * @LastEditTime: 2024-06-27 18:14:27
  * @FilePath: /mini-react-learn/Day2/vite-runner/App.jsx
  * @Description: 
  */
@@ -67,7 +67,7 @@ function App() {
     const [str, setStr] = useState('');
     function handleClick() {
         setCount(pre => pre + 1);
-        setStr(p => p + 'x');
+        // setStr('x');
     }
 
     console.log('App render', count);
