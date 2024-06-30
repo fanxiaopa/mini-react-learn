@@ -100,16 +100,31 @@ function commitHook() {
                 const needUpdate = oldHook?.deps?.some((dep, i) => {
                     return dep !== newHook.deps?.[i];
                 });
-                needUpdate && newHook?.callback();
+                if (needUpdate) {
+                    newHook.cleanup = newHook.callback();
+                }
             });
         } else {
             fiber.effectHooks?.forEach(hook => {
-                hook.callback();
+                hook.cleanup = hook.callback();
             })
         }
         run(fiber.child);
         run(fiber.sibling);
     }
+    const cleanupRun = (fiber) => {
+        if (!fiber) return;
+        fiber.alternate?.effectHooks?.forEach(hook => {
+            if (hook.deps.length > 0) {
+                hook.cleanup?.();
+            }
+        })
+        cleanupRun(fiber.child);
+        cleanupRun(fiber.sibling);
+    }
+    // 先清理
+    cleanupRun(wipRoot);
+    // 再执行
     run(wipRoot);
 }
 
@@ -306,7 +321,8 @@ let effectHooks;
 function useEffect(callback, deps) {
     const effectHook = {
         callback,
-        deps
+        deps,
+        cleanup: undefined
     };
     effectHooks.push(effectHook);
 

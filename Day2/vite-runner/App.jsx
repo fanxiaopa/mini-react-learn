@@ -1,7 +1,7 @@
 /*
  * @Author: yxfan
  * @Date: 2024-06-01 15:17:35
- * @LastEditTime: 2024-06-30 15:14:52
+ * @LastEditTime: 2024-06-30 16:42:38
  * @FilePath: /mini-react-learn/Day2/vite-runner/App.jsx
  * @Description: 
  */
@@ -76,6 +76,9 @@ function App() {
 
     useEffect(() => {
         console.log('update render');        
+        return () => {
+            console.log('cleanup count')
+        }
     }, [count]);
     
     return (
