@@ -1,12 +1,12 @@
 /*
  * @Author: yxfan
  * @Date: 2024-06-01 15:17:35
- * @LastEditTime: 2024-06-27 18:14:27
+ * @LastEditTime: 2024-06-30 15:14:52
  * @FilePath: /mini-react-learn/Day2/vite-runner/App.jsx
  * @Description: 
  */
 import React from "./core/React.js";
-const { useState } = React;
+const { useState, useEffect } = React;
 // 这里vite会把jsx默认转化成 React.createElement方法调用
 
 let count = 0;
@@ -70,7 +70,13 @@ function App() {
         // setStr('x');
     }
 
-    console.log('App render', count);
+    useEffect(() => {
+        console.log('init render');        
+    }, []);
+
+    useEffect(() => {
+        console.log('update render');        
+    }, [count]);
     
     return (
         <div id="yxfan1"> 

@@ -59,6 +59,7 @@ function commitRoot() {
     deletions.forEach(commitDeletions);
     deletions = [];
     commitWork(wipRoot.child);
+    commitHook();
     wipRoot = null;
 }
 
@@ -86,6 +87,30 @@ function commitWork(fiber) {
     
     commitWork(fiber.child);
     commitWork(fiber.sibling);
+}
+
+function commitHook() {
+    const run = (fiber) => {
+        if (!fiber) return;
+        // 判断是否是初始化，如果有alternate，则一定是update，不是init
+        const isUpdate = Boolean(fiber.alternate);
+        if (isUpdate) {
+            fiber.effectHooks?.forEach((newHook, index) => {
+                const oldHook = fiber.alternate?.effectHooks[index];
+                const needUpdate = oldHook?.deps?.some((dep, i) => {
+                    return dep !== newHook.deps?.[i];
+                });
+                needUpdate && newHook?.callback();
+            });
+        } else {
+            fiber.effectHooks?.forEach(hook => {
+                hook.callback();
+            })
+        }
+        run(fiber.child);
+        run(fiber.sibling);
+    }
+    run(wipRoot);
 }
 
 function updateProps(dom, nextProps, preProps = {}) {
@@ -183,6 +208,7 @@ function reconcileChildren(fiber, children) {
 function updateFunctionComponent(fiber) {
     // 处理function组件时，先将stateHooks清空，然后重新赋值
     stateHooks = [];
+    effectHooks = [];
     stateHookIndex = 0;
     wipFiber = fiber;
     const children = [fiber.type(fiber.props)];
@@ -232,17 +258,17 @@ function performWorkOfUnit(fiber) {
 }
 requestIdleCallback(workLoop);
 
-function update() {
-    // 必包，用于保存wipFiber；
-    let currentFiber = wipFiber;
-    return () => {
-        wipRoot = {
-            ...currentFiber,
-            alternate: currentFiber
-        }
-        nextWorkOfUnit = wipRoot;
-    }
-}
+// function update() {
+//     // 必包，用于保存wipFiber；
+//     let currentFiber = wipFiber;
+//     return () => {
+//         wipRoot = {
+//             ...currentFiber,
+//             alternate: currentFiber
+//         }
+//         nextWorkOfUnit = wipRoot;
+//     }
+// }
 
 // 保存hooks
 let stateHooks;
@@ -276,4 +302,15 @@ function useState(intial) {
     return [stateHook.state, setState]
 }
 
-export default { render, createElement, update, useState };
+let effectHooks;
+function useEffect(callback, deps) {
+    const effectHook = {
+        callback,
+        deps
+    };
+    effectHooks.push(effectHook);
+
+    wipFiber.effectHooks = effectHooks;       
+}
+
+export default { render, createElement, useState, useEffect };
